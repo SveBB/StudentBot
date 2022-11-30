@@ -1,9 +1,20 @@
 import bot_token
 import telebot
+import _pickle as cPickle
 
-PATH_TO_CLF = './classifier.pkl'
-PATH_TO_VECTORIZER = './vectorizer.pkl'
-PATH_TO_LABEL_ENCODER = './le.pkl'
+
+def load_model(filename):
+    with open(filename, 'rb') as fid:
+        model = cPickle.load(fid)
+    return model
+
+PATH_TO_CLF = 'files/NB_classifier.pkl'
+PATH_TO_VECTORIZER = 'files/vectorizer.pkl'
+PATH_TO_LABEL_ENCODER = 'files/le.pkl'
+
+clf = load_model(PATH_TO_CLF)
+vectorizer = load_model(PATH_TO_VECTORIZER)
+le = load_model(PATH_TO_LABEL_ENCODER)
 
 bot = telebot.TeleBot(bot_token.token)
 
@@ -12,8 +23,11 @@ def start_message(message):
   bot.send_message(message.chat.id,"Привет ✌️. Это твой бот-помощник в твоей студентческой жизни, можешь задавать ему вопросы!")
 
 @bot.message_handler(content_types=["text"])
-def repeat_all_messages(message): # Название функции не играет никакой роли
-    bot.send_message(message.chat.id, message.text)
+def process_messages(message):
+    data = vectorizer.transform([message.text])
+    predict_labels = clf.predict(data)
+    response = le.inverse_transform(predict_labels)
+    bot.send_message(message.chat.id,response)
 
 if __name__ == '__main__':
-     bot.infinity_polling()
+    bot.infinity_polling()
